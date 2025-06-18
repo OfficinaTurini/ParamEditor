@@ -1,6 +1,28 @@
 # ParamEditor
 Allows you to edit explicit or implicit parameters (class) without using QDesigner.
 Look at main.cpp and you will understand how easy it is to create GUI without going crazy with QDesigner to change a few parameters.
+
+Type of data managed:
+  bool
+  double
+  Directory selection
+  File path
+  float
+  int
+  Password
+  QColor
+  QDate
+  QDateTime
+  QFont
+  QPoint
+  QRect
+  QSize
+  QString
+  QStringList
+  QTime
+  QVariant
+  Range
+  
 I tested this code with Qt 5.15.2 and VS2019 (C++14).
 Below are some screen shots of the demo program.
 
