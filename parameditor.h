@@ -1134,6 +1134,53 @@ public:
     }
 };
 
+/**
+ * @class FloatParam
+ * @brief Parameter class for handling single-precision floating-point values.
+ */
+class FloatParam : public ParamBase {
+    Q_OBJECT
+        float* ptr; ///< Pointer to the float value.
+    float defVal; ///< Default value.
+    QDoubleSpinBox* spin; ///< Spin box for user input.
+public:
+    /**
+     * @brief Constructor for FloatParam.
+     * @param name Parameter name.
+     * @param p Pointer to the float value.
+     * @param min Minimum allowed value.
+     * @param max Maximum allowed value.
+     * @param step Step size for the spin box.
+     * @param tip Tooltip text.
+     * @param parent Parent widget (default: nullptr).
+     */
+    FloatParam(QString name, float* p, float min, float max, float step, QString tip, QWidget* parent = nullptr)
+        : ParamBase(parent) {
+        this->name = name;
+        ptr = p;
+        defVal = *p;
+        spin = new QDoubleSpinBox(this);
+        spin->setRange(min, max);
+        spin->setSingleStep(step);
+        spin->setValue(*p);
+        spin->setToolTip(tip);
+        spin->setAlignment(Qt::AlignRight);
+        widget = spin;
+    }
+    void apply() override { *ptr = static_cast<float>(spin->value()); }
+    void reset() override { spin->setValue(defVal); }
+    void save(QXmlStreamWriter& w) const override {
+        w.writeStartElement(name);
+        w.writeAttribute("value", QString::number(spin->value(), 'f', 6));
+        w.writeEndElement();
+    }
+    void load(QXmlStreamReader& r) override {
+        if (r.attributes().hasAttribute("value"))
+            spin->setValue(r.attributes().value("value").toFloat());
+        r.readNext();
+    }
+};
+
 /* -------------------------------------
    Main Editor Dialog Class
    ------------------------------------- */
@@ -1227,7 +1274,7 @@ public:
         label->setFixedWidth(120); // Larghezza fissa per allineare le etichette
         row->addWidget(label);
 
-        // Imposta una larghezza fissa per il widget del parametro per uniformità
+        // Imposta una larghezza fissa per il widget del parametro per uniformitÃ 
         if (param->widget) {
             param->widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
             param->widget->setMinimumWidth(200); // Larghezza minima per i widget
@@ -1510,6 +1557,9 @@ private:
         else if (type == QMetaType::Double) {
             createDoubleParam(editor, tabIndex, obj, prop, info);
         }
+        else if (type == QMetaType::Float) {
+            createFloatParam(editor, tabIndex, obj, prop, info);
+        }
         else if (type == QMetaType::Bool) {
             createBoolParam(editor, tabIndex, obj, prop, info);
         }
@@ -1590,6 +1640,28 @@ private:
         );
 
         setupParamConnections<DoubleParam, double>(editor, tabIndex, param, obj, prop, valuePtr);
+    }
+
+    static void createFloatParam(
+        ParamsEditor* editor,
+        int tabIndex,
+        QObject* obj,
+        QMetaProperty prop,
+        const PropertyInfo& info
+    ) {
+        float* valuePtr = new float(prop.read(obj).toFloat());
+        float min = (info.min != 0 || info.max != 0) ? static_cast<float>(info.min) : -FLT_MAX;
+        float max = (info.min != 0 || info.max != 0) ? static_cast<float>(info.max) : FLT_MAX;
+        float step = info.step != 0 ? static_cast<float>(info.step) : 0.1f;
+
+        FloatParam* param = new FloatParam(
+            info.displayName,
+            valuePtr,
+            min, max, step,
+            info.tooltip
+        );
+
+        setupParamConnections<FloatParam, float>(editor, tabIndex, param, obj, prop, valuePtr);
     }
 
     static void createBoolParam(
